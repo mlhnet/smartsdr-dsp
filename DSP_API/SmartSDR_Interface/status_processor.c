@@ -37,6 +37,7 @@
 
 #include "common.h"
 #include "traffic_cop.h"
+#include "sched_waveform.h"
 
 static void _handle_status(char* string)
 {
@@ -48,6 +49,7 @@ static void _handle_status(char* string)
     char* save = 0;
     char* start = strtok_r(string,"|",&save);
     start = strtok_r(NULL,"|",&save);
+
 
     // first let's look for a slice status -- these are most important
     if (strncmp(start, "slice", strlen("slice")) == 0)
@@ -77,7 +79,11 @@ static void _handle_status(char* string)
                 if (strncmp(smode,"FDV",3) == 0)
                 {
                     // we are now in FDV mode
-                    output(ANSI_MAGENTA "slice %d is now in FDV mode\n",slc);
+                    output(ANSI_MAGENTA "slice %d is now in FDV mode - sendig commands\n",slc);
+
+                    char cmd[512] = {0};
+                    sprintf(cmd, "slice s %d digu_offset=1500", slc);
+                    tc_sendSmartSDRcommand(cmd, FALSE, NULL);
                 }
                 else
                 {
@@ -136,6 +142,11 @@ static void _handle_status(char* string)
                     strncmp(state,"NOT_READY",strlen("NOT_READY")) == 0)
                 {
                     output(ANSI_MAGENTA "we are receiving\n");
+                }
+                else if ( strncmp(state, "UNKEY_REQUESTED", strlen("UNKEY_REQUESTED")) == 0 )
+                {
+                    output(ANSI_MAGENTA "unkey requested \n");
+                    sched_waveform_setEndOfTX(TRUE);
                 }
             }
         }
